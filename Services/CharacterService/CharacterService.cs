@@ -15,9 +15,11 @@ namespace dotnet_rpg.Services.CharacterService
             new Character{ Id = 1, Name = "Sam"}
         };
         private readonly IMapper _mapper;
+        private readonly DataContext _context;
 
-        public CharacterService(IMapper mapper)
+        public CharacterService(IMapper mapper, DataContext context)
         {
+            _context = context;
             _mapper = mapper;
         }
 
@@ -55,10 +57,9 @@ namespace dotnet_rpg.Services.CharacterService
 
         public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters()
         {
-            var serviceResponse = new ServiceResponse<List<GetCharacterDto>>
-            {
-                Data = _characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList()
-            };
+            var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
+            var dbCharacters = await _context.Characters.ToListAsync();
+            serviceResponse.Data = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
             return serviceResponse;
         }
 
@@ -67,11 +68,11 @@ namespace dotnet_rpg.Services.CharacterService
             var serviceResponse = new ServiceResponse<GetCharacterDto>();
             try
             {
-                var character = _characters.FirstOrDefault(c => c.Id == id);
-                if (character is null)
+                var dbCharacter = await _context.Characters.FirstOrDefaultAsync(c => c.Id == id);
+                if (dbCharacter is null)
                     throw new Exception($"Character with Id '{id}' not found");
 
-                serviceResponse.Data = _mapper.Map<GetCharacterDto>(character);
+                serviceResponse.Data = _mapper.Map<GetCharacterDto>(dbCharacter);
             }
             catch (Exception ex)
             {
